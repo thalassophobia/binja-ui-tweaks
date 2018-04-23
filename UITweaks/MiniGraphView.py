@@ -1,14 +1,26 @@
 
 import sys
+import os
 
 from PyQt5 import QtWidgets, QtCore, QtGui
 from PyQt5.QtCore import Qt
 
 from . import Util
+from binaryninja import *
 
 import BinjaUI as ui
 
 refs = []
+hard_address_list = [0x080489c0, 0x080489de, 0x8048a2c]
+abs_path = os.path.dirname(os.path.abspath(__file__))
+
+#Relative path doesn't work here. Something weird happening with Binja probably
+#with open(abs_path + "/address_file.txt", "r") as f:
+#    address_file = [line.strip() for line in f]
+#
+#hex_address_list = [int(item, 16) for item in address_file]
+
+
 
 class MiniGraphWidget(QtWidgets.QFrame):
 
@@ -107,6 +119,9 @@ class MiniGraphWidget(QtWidgets.QFrame):
         painter.end()
 
     def updateRendering(self):
+        with open(abs_path + "/address_file.txt", "r") as f:
+            address_file = [line.strip() for line in f]
+        hex_address_list = [int(item, 16) for item in address_file]
 
         curFun = Util.CurrentFunction()
         if not curFun:
@@ -193,7 +208,12 @@ class MiniGraphWidget(QtWidgets.QFrame):
             pen.setColor(QtGui.QColor(0x909090))
             painter.setPen(pen)
 
-            painter.fillRect(node.x, node.y, node.width, node.height, QtGui.QColor(0x4A4A4A))
+            #Look at the list of addresses and if it is within the range of a block, highlight that block
+            for address in range(node.start, node.end):
+                painter.fillRect(node.x, node.y, node.width, node.height, QtGui.QColor(0x4A4A4A))
+                if address in hex_address_list:
+                    painter.fillRect(node.x, node.y, node.width, node.height, Qt.yellow)
+                    break
 
         painter.resetTransform()
         painter.translate(x_off, y_off)
